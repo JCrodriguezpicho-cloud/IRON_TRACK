@@ -102,15 +102,58 @@ button:disabled { opacity:.45; cursor:not-allowed }
     <h2>Nuevo registro</h2>
 
     <label for="exercise">Ejercicio</label>
-    <select id="exercise">
-      <option>Sentadilla libre</option>
-      <option>Sentadilla en máquina Smith</option>
-      <option>Prensa de piernas</option>
-      <option>Elevación de talones (gemelos)</option>
-      <option>Extensión de cuádriceps</option>
-      <option>Aducción de cadera (aductores)</option>
-      <option>Zancadas</option>
-    </select>
+   
+<select id="exercise" name="exercise" required>
+  <optgroup label="Piernas y cuádriceps">
+    <option value="Sentadilla libre">Sentadilla libre</option>
+    <option value="Sentadilla en máquina Smith">Sentadilla en máquina Smith</option>
+    <option value="Prensa de piernas">Prensa de piernas</option>
+    <option value="Elevación de talones para gemelos">Elevación de talones para gemelos</option>
+    <option value="Extensión de cuádriceps">Extensión de cuádriceps</option>
+    <option value="Aducción de cadera en máquina">Aducción de cadera en máquina</option>
+    <option value="Zancadas">Zancadas</option>
+    <option value="Sentadilla búlgara">Sentadilla búlgara</option>
+    <option value="Zancadas con mancuernas">Zancadas con mancuernas</option>
+  </optgroup>
+
+  <optgroup label="Isquiotibiales y peso muerto">
+    <option value="Peso muerto rumano">Peso muerto rumano</option>
+    <option value="Peso muerto sumo">Peso muerto sumo</option>
+    <option value="Curl femoral sentado en máquina">Curl femoral sentado en máquina</option>
+    <option value="Curl femoral de pie en máquina">Curl femoral de pie en máquina</option>
+    <option value="Curl femoral tumbado en máquina">Curl femoral tumbado en máquina</option>
+  </optgroup>
+
+  <optgroup label="Glúteos y cadera">
+    <option value="Patada de glúteos en máquina o polea">Patada de glúteos en máquina o polea</option>
+    <option value="Abducción de cadera en máquina">Abducción de cadera en máquina</option>
+    <option value="Hip thrust (empuje de cadera)">Hip thrust (empuje de cadera)</option>
+  </optgroup>
+
+  <optgroup label="Espalda">
+    <option value="Jalón al pecho con agarre supino">Jalón al pecho con agarre supino</option>
+    <option value="Remo sentado en banco">Remo sentado en banco</option>
+    <option value="Jalón al pecho con agarre prono">Jalón al pecho con agarre prono</option>
+  </optgroup>
+
+  <optgroup label="Hombros">
+    <option value="Press de hombros">Press de hombros</option>
+    <option value="Elevaciones laterales de hombros">Elevaciones laterales de hombros</option>
+  </optgroup>
+
+  <optgroup label="Bíceps">
+    <option value="Curl de bíceps con mancuernas">Curl de bíceps con mancuernas</option>
+    <option value="Curl de bíceps concentrado">Curl de bíceps concentrado</option>
+    <option value="Curl de bíceps en banco inclinado a 30°">Curl de bíceps en banco inclinado a 30°</option>
+  </optgroup>
+
+  <optgroup label="Tríceps">
+    <option value="Extensión de tríceps en polea alta">Extensión de tríceps en polea alta</option>
+    <option value="Extensión de tríceps por encima de la cabeza">Extensión de tríceps por encima de la cabeza</option>
+    <option value="Patada de tríceps con mancuerna">Patada de tríceps con mancuerna</option>
+    <option value="Extensión de tríceps tumbado (rompecráneos)">Extensión de tríceps tumbado (rompecráneos)</option>
+  </optgroup>
+</select>
 
     <div class="row">
       <div>
