@@ -682,16 +682,6 @@ $("startBtn").addEventListener("click", async () => {
   }
 });
 
-    if (app.session?.status === "active") {
-      const ok = confirm(
-        "Hay una sesión pendiente. ¿Quieres iniciar otra? " +
-        "Los registros anteriores se conservarán."
-      );
-      if (!ok) return;
-    }
-    await beginSession();
-  });
-
   $("resumeBtn").addEventListener("click",resumeSession);
   $("saveBtn").addEventListener("click",saveExercise);
   $("finishBtn").addEventListener("click",finishSession);
