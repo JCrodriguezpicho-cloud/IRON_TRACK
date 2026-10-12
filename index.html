@@ -512,23 +512,63 @@ async function exportExcel() {
   notify("Archivo Excel generado con todo el historial.");
 }
 
-async function closeForm() {
-  const pending = app.session?.status === "active";
 
+async function closeForm() {
   const ok = confirm(
-    (pending
-      ? "Hay una sesión sin finalizar. "
-      : "¿Deseas salir del formulario? ") +
-    "Los datos guardados se conservarán en este dispositivo. " +
-    "¿Quieres salir? Pulsa Cancelar para permanecer."
+    "¿Deseas cerrar IRON TRACK y borrar todos los datos " +
+    "del usuario actual? Se eliminarán sus registros, " +
+    "la sesión y el borrador de este dispositivo. " +
+    "Esta acción no se puede deshacer. " +
+    "Pulsa Cancelar para conservar toda la información."
   );
 
   if (!ok) return;
 
-  await persistDraft();
-  showScreen("closed");
-  await saveSetting("app",app);
+  clearTimeout(draftTimer);
+
+  try {
+    // Eliminar los registros guardados de esta persona.
+    const tx = db.transaction(
+      ["records", "settings"],
+      "readwrite"
+    );
+
+    tx.objectStore("records").clear();
+    tx.objectStore("settings").clear();
+
+    await new Promise((resolve, reject) => {
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+
+    // Restablecer el estado de la aplicación.
+    app = {
+      session: null,
+      draft: {},
+      screen: "welcome"
+    };
+
+    records = [];
+
+    $("client").value = "";
+    $("date").value = today();
+    applyDraft({});
+
+    $("resumeBtn").hidden = true;
+    $("resumeInfo").textContent =
+      "Datos anteriores eliminados. Puedes registrar un nuevo usuario.";
+
+    showScreen("welcome");
+    notify("Datos eliminados. IRON TRACK está listo para otra persona.");
+  } catch (error) {
+    notify(
+      "No se pudieron eliminar todos los datos. " +
+      "Comprueba el almacenamiento e inténtalo nuevamente."
+    );
+  }
 }
+
 
 async function init() {
   $("date").value = today();
