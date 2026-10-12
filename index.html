@@ -1,0 +1,613 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#17191d">
+<title>IRON TRACK | Gym Log</title>
+
+<style>
+:root {
+  --bg:#17191d; --panel:#22252a; --gold:#d9ac52;
+  --text:#f7f5f0; --muted:#aeb3bb; --line:#3b3f45;
+}
+* { box-sizing:border-box }
+body {
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:system-ui,-apple-system,sans-serif;
+}
+main { max-width:620px; margin:auto; padding:16px }
+header {
+  display:flex; align-items:center; gap:13px;
+  padding:18px 0; border-bottom:1px solid var(--line);
+}
+.logo {
+  background:var(--gold); color:#17191d; border-radius:12px;
+  padding:13px; font-size:25px; font-weight:900;
+}
+h1 { font-size:23px; margin:0; letter-spacing:2px }
+h2 { font-size:19px; margin:8px 0 }
+p,.muted { color:var(--muted); font-size:13px }
+.panel {
+  background:var(--panel); border:1px solid var(--line);
+  border-radius:15px; padding:17px; margin:16px 0;
+}
+label { display:block; font-size:14px; margin:14px 0 7px }
+input,select,textarea {
+  width:100%; padding:13px; border-radius:9px;
+  border:1px solid var(--line); background:#17191d;
+  color:var(--text); font:inherit; font-size:16px;
+}
+textarea { resize:vertical; min-height:76px }
+.row { display:grid; grid-template-columns:1fr 1fr; gap:12px }
+button {
+  width:100%; padding:14px; margin-top:12px;
+  border:0; border-radius:10px; font-size:15px;
+  font-weight:700; cursor:pointer; background:var(--gold);
+  color:#17191d;
+}
+button.secondary {
+  background:#34383f; color:white; border:1px solid #484c53;
+}
+button.danger { background:#692e30; color:white }
+button:disabled { opacity:.45; cursor:not-allowed }
+.status { color:var(--gold); font-size:12px }
+.record {
+  border:1px solid var(--line); border-radius:10px;
+  padding:12px; margin:10px 0;
+}
+.record strong { display:block; margin-bottom:5px }
+.actions { display:flex; gap:10px; flex-wrap:wrap }
+.actions button { flex:1; min-width:130px }
+#notice { min-height:20px; color:var(--gold); font-size:13px }
+[hidden] { display:none !important }
+</style>
+
+<!-- Necesaria para generar archivos .xlsx -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+
+<body>
+<main>
+<header>
+  <div class="logo">IT</div>
+  <div>
+    <h1>IRON TRACK</h1>
+    <div class="status">GYM · TRAINING LOG</div>
+  </div>
+</header>
+
+<section id="welcome" class="panel">
+  <h2>Tu entrenamiento</h2>
+  <p>Los datos se guardan en este dispositivo. Puedes regresar y continuar una sesión pendiente.</p>
+  <div id="resumeInfo" class="muted"></div>
+  <label for="client">Nombre del deportista</label>
+  <input id="client" placeholder="Nombre completo" autocomplete="name">
+  <label for="date">Fecha del entrenamiento</label>
+  <input id="date" type="date">
+  <button id="startBtn">Iniciar entrenamiento</button>
+  <button id="resumeBtn" class="secondary" hidden>Continuar sesión guardada</button>
+</section>
+
+<section id="workout" hidden>
+  <div class="panel">
+    <div class="status">SESIÓN ACTUAL</div>
+    <h2 id="sessionName"></h2>
+    <div id="sessionDate" class="muted"></div>
+    <p id="saveStatus" role="status">Preparado</p>
+  </div>
+
+  <div id="entry" class="panel">
+    <h2>Nuevo registro</h2>
+
+    <label for="exercise">Ejercicio</label>
+    <select id="exercise">
+      <option>Sentadilla libre</option>
+      <option>Sentadilla en máquina Smith</option>
+      <option>Prensa de piernas</option>
+      <option>Elevación de talones (gemelos)</option>
+      <option>Extensión de cuádriceps</option>
+      <option>Aducción de cadera (aductores)</option>
+      <option>Zancadas</option>
+    </select>
+
+    <div class="row">
+      <div>
+        <label for="weight">Peso (kg)</label>
+        <input id="weight" type="number" min="0" step="0.25"
+               inputmode="decimal" placeholder="0">
+      </div>
+      <div>
+        <label for="reps">Repeticiones</label>
+        <input id="reps" type="number" min="1" step="1"
+               inputmode="numeric" placeholder="12">
+      </div>
+    </div>
+
+    <label for="series">Número de serie</label>
+    <select id="series">
+      <option value="1">Serie 1</option>
+      <option value="2">Serie 2</option>
+      <option value="3">Serie 3</option>
+      <option value="4">Serie 4</option>
+      <option value="5">Serie 5</option>
+      <option value="6">Serie 6</option>
+      <option value="7">Serie 7</option>
+      <option value="8">Serie 8</option>
+      <option value="9">Serie 9</option>
+      <option value="10">Serie 10</option>
+    </select>
+
+    <label for="notes">Observaciones</label>
+    <textarea id="notes" placeholder="Técnica, molestias, progresión..."></textarea>
+
+    <button id="saveBtn">Guardar registro</button>
+    <p>Los campos se vacían al guardar. El nombre y la fecha se conservan.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Historial de esta sesión</h2>
+    <div id="count" class="muted">0 registros</div>
+    <div id="records"></div>
+    <button id="finishBtn" class="secondary">Finalizar entrenamiento</button>
+  </div>
+
+  <div class="panel">
+    <h2>Datos y exportación</h2>
+    <p id="totalCount"></p>
+    <button id="exportBtn">Exportar TODO el historial a Excel</button>
+    <button id="closeBtn" class="secondary">Cerrar formulario</button>
+    <button id="newBtn" class="secondary" hidden>Nueva sesión</button>
+  </div>
+</section>
+
+<section id="closed" class="panel" hidden>
+  <h2>Formulario cerrado</h2>
+  <p>Los datos guardados se mantienen en este dispositivo.</p>
+  <button id="reopenBtn">Volver a abrir</button>
+</section>
+
+<div id="notice" role="status" aria-live="polite"></div>
+</main>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+const DB_NAME = "IronTrackLocal";
+const DB_VERSION = 1;
+
+let db;
+let app = {
+  session: null,
+  draft: {},
+  screen: "welcome"
+};
+let records = [];
+let draftTimer;
+
+function today() {
+  const d = new Date();
+  return [
+    d.getFullYear(),
+    String(d.getMonth()+1).padStart(2,"0"),
+    String(d.getDate()).padStart(2,"0")
+  ].join("-");
+}
+
+function notify(message) {
+  $("notice").textContent = message;
+}
+
+function openDB() {
+  return new Promise((resolve,reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onupgradeneeded = () => {
+      const database = request.result;
+      database.createObjectStore("settings", {keyPath:"key"});
+      database.createObjectStore("records", {
+        keyPath:"id", autoIncrement:true
+      });
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function getSetting(key) {
+  return new Promise((resolve,reject) => {
+    const request = db.transaction("settings","readonly")
+      .objectStore("settings").get(key);
+    request.onsuccess = () => resolve(request.result?.value);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function saveSetting(key,value) {
+  return new Promise((resolve,reject) => {
+    const tx = db.transaction("settings","readwrite");
+    tx.objectStore("settings").put({key,value});
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
+function getAllRecords() {
+  return new Promise((resolve,reject) => {
+    const request = db.transaction("records","readonly")
+      .objectStore("records").getAll();
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function addRecord(record) {
+  return new Promise((resolve,reject) => {
+    const tx = db.transaction("records","readwrite");
+    const request = tx.objectStore("records").add(record);
+    let id;
+    request.onsuccess = () => { id = request.result; };
+    tx.oncomplete = () => resolve(id);
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+
+function getDraftFromForm() {
+  return {
+    exercise: $("exercise").value,
+    weight: $("weight").value,
+    reps: $("reps").value,
+    series: $("series").value,
+    notes: $("notes").value
+  };
+}
+
+async function persistDraft() {
+  clearTimeout(draftTimer);
+  app.draft = getDraftFromForm();
+  $("saveStatus").textContent = "Guardando borrador…";
+
+  try {
+    await saveSetting("app",app);
+    $("saveStatus").textContent = "Borrador guardado en este dispositivo";
+  } catch (error) {
+    $("saveStatus").textContent = "Error de guardado: exporta una copia";
+    notify("No se pudo guardar el borrador. Comprueba el almacenamiento.");
+  }
+}
+
+function scheduleDraftSave() {
+  clearTimeout(draftTimer);
+  $("saveStatus").textContent = "Cambios pendientes de guardar…";
+  draftTimer = setTimeout(persistDraft,250);
+}
+
+function applyDraft(draft={}) {
+  $("exercise").value = draft.exercise || "Sentadilla libre";
+  $("weight").value = draft.weight ?? "";
+  $("reps").value = draft.reps ?? "";
+  $("series").value = draft.series || "1";
+  $("notes").value = draft.notes || "";
+}
+
+function showScreen(screen) {
+  $("welcome").hidden = screen !== "welcome";
+  $("workout").hidden = screen !== "workout";
+  $("closed").hidden = screen !== "closed";
+  app.screen = screen;
+}
+
+async function beginSession() {
+  const client = $("client").value.trim();
+  const date = $("date").value || today();
+
+  if (!client) {
+    notify("Introduce el nombre del deportista.");
+    return;
+  }
+
+  app.session = {
+    id: crypto.randomUUID(),
+    client,
+    date,
+    status:"active",
+    startedAt:new Date().toISOString()
+  };
+  app.draft = {};
+  applyDraft();
+  await saveSetting("app",app);
+  await refresh();
+  showScreen("workout");
+  render();
+  notify("Sesión iniciada y guardada.");
+}
+
+async function resumeSession() {
+  if (!app.session) return;
+  showScreen("workout");
+  applyDraft(app.draft);
+  await refresh();
+  render();
+  notify("Sesión recuperada.");
+}
+
+async function saveExercise() {
+  if (!app.session || app.session.status !== "active") {
+    notify("Esta sesión no admite nuevos registros.");
+    return;
+  }
+
+  const weight = $("weight").value.trim();
+  const reps = $("reps").value.trim();
+
+  if (weight === "" || !Number.isFinite(Number(weight)) ||
+      Number(weight) < 0) {
+    notify("Introduce un peso válido, igual o mayor que cero.");
+    return;
+  }
+  if (reps === "" || !Number.isInteger(Number(reps)) ||
+      Number(reps) < 1) {
+    notify("Las repeticiones deben ser un entero mayor que cero.");
+    return;
+  }
+
+  clearTimeout(draftTimer);
+
+  const record = {
+    sessionId:app.session.id,
+    client:app.session.client,
+    date:app.session.date,
+    exercise:$("exercise").value,
+    weight:Number(weight),
+    reps:Number(reps),
+    series:Number($("series").value),
+    notes:$("notes").value.trim(),
+    savedAt:new Date().toISOString()
+  };
+
+  try {
+    await addRecord(record);
+    // No se limpia el formulario hasta confirmar el guardado.
+    applyDraft({});
+    app.draft = {};
+    await saveSetting("app",app);
+    await refresh();
+    render();
+    notify("Registro guardado correctamente.");
+  } catch (error) {
+    notify("No se pudo guardar. No cierres la aplicación e inténtalo otra vez.");
+  }
+}
+
+async function finishSession() {
+  if (!app.session || app.session.status !== "active") return;
+
+  const sessionRecords = records.filter(
+    r => r.sessionId === app.session.id
+  );
+
+  if (!sessionRecords.length) {
+    notify("Guarda al menos un ejercicio antes de finalizar.");
+    return;
+  }
+
+  const ok = confirm(
+    "¿Finalizar este entrenamiento? Los registros se conservarán. " +
+    "Ya no podrás añadir ejercicios a esta sesión."
+  );
+  if (!ok) return;
+
+  clearTimeout(draftTimer);
+  app.session.status = "finished";
+  app.draft = {};
+  applyDraft({});
+  await saveSetting("app",app);
+  render();
+  notify("Entrenamiento finalizado. Puedes exportar todo el historial.");
+}
+
+async function refresh() {
+  records = await getAllRecords();
+  records.sort((a,b) => a.id-b.id);
+}
+
+function render() {
+  const session = app.session;
+  if (!session) return;
+
+  $("sessionName").textContent = session.client;
+  $("sessionDate").textContent = "Fecha: " + session.date;
+  $("count").textContent =
+    records.filter(r => r.sessionId === session.id).length +
+    " registros en esta sesión";
+  $("totalCount").textContent =
+    "Historial total: " + records.length + " registros guardados.";
+
+  const active = session.status === "active";
+  $("entry").hidden = !active;
+  $("finishBtn").hidden = !active;
+  $("newBtn").hidden = active;
+  $("records").replaceChildren();
+
+  records.filter(r => r.sessionId === session.id).forEach(r => {
+    const item = document.createElement("div");
+    item.className = "record";
+
+    const title = document.createElement("strong");
+    title.textContent = r.exercise;
+
+    const detail = document.createElement("div");
+    detail.textContent =
+      `${r.weight} kg · ${r.reps} repeticiones · Serie ${r.series}`;
+
+    item.append(title,detail);
+
+    if (r.notes) {
+      const note = document.createElement("p");
+      note.textContent = r.notes;
+      item.append(note);
+    }
+    $("records").append(item);
+  });
+}
+
+async function exportExcel() {
+  await refresh();
+
+  if (!records.length) {
+    notify("No hay registros para exportar.");
+    return;
+  }
+
+  if (!window.XLSX) {
+    notify("No se cargó la biblioteca Excel. Conéctate a internet e inténtalo de nuevo.");
+    return;
+  }
+
+  const rows = records.map(r => ({
+    "Fecha":r.date,
+    "Cliente":r.client,
+    "Ejercicio":r.exercise,
+    "Peso (kg)":r.weight,
+    "Repeticiones":r.reps,
+    "Serie":r.series,
+    "Observaciones":r.notes,
+    "Fecha y hora de guardado":r.savedAt
+  }));
+
+  const sheet = XLSX.utils.json_to_sheet(rows);
+  sheet["!cols"] = [
+    {wch:13},{wch:25},{wch:35},{wch:12},
+    {wch:14},{wch:10},{wch:40},{wch:25}
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook,sheet,"Entrenamientos");
+
+  // Segunda hoja con el resumen de sesiones.
+  const sessions = new Map();
+  records.forEach(r => {
+    if (!sessions.has(r.sessionId)) {
+      sessions.set(r.sessionId,{
+        "Cliente":r.client,
+        "Fecha":r.date,
+        "ID de sesión":r.sessionId,
+        "Cantidad de registros":0
+      });
+    }
+    sessions.get(r.sessionId)["Cantidad de registros"]++;
+  });
+
+  XLSX.utils.book_append_sheet(
+    workbook,
+    XLSX.utils.json_to_sheet([...sessions.values()]),
+    "Sesiones"
+  );
+
+  XLSX.writeFile(workbook,`IRON_TRACK_${today()}.xlsx`);
+  notify("Archivo Excel generado con todo el historial.");
+}
+
+async function closeForm() {
+  const pending = app.session?.status === "active";
+
+  const ok = confirm(
+    (pending
+      ? "Hay una sesión sin finalizar. "
+      : "¿Deseas salir del formulario? ") +
+    "Los datos guardados se conservarán en este dispositivo. " +
+    "¿Quieres salir? Pulsa Cancelar para permanecer."
+  );
+
+  if (!ok) return;
+
+  await persistDraft();
+  showScreen("closed");
+  await saveSetting("app",app);
+}
+
+async function init() {
+  $("date").value = today();
+  db = await openDB();
+
+  const saved = await getSetting("app");
+  if (saved) app = saved;
+
+  await refresh();
+
+  if (app.session?.status === "active") {
+    $("resumeInfo").textContent =
+      `Sesión pendiente: ${app.session.client}, ${app.session.date}.`;
+    $("client").value = app.session.client;
+    $("date").value = app.session.date;
+    $("resumeBtn").hidden = false;
+  } else if (app.session?.status === "finished") {
+    $("resumeInfo").textContent =
+      "La última sesión está finalizada. Puedes exportar el historial o iniciar otra.";
+  }
+
+  applyDraft(app.draft);
+
+  $("startBtn").addEventListener("click",async () => {
+    if (app.session?.status === "active") {
+      const ok = confirm(
+        "Hay una sesión pendiente. ¿Quieres iniciar otra? " +
+        "Los registros anteriores se conservarán."
+      );
+      if (!ok) return;
+    }
+    await beginSession();
+  });
+
+  $("resumeBtn").addEventListener("click",resumeSession);
+  $("saveBtn").addEventListener("click",saveExercise);
+  $("finishBtn").addEventListener("click",finishSession);
+  $("exportBtn").addEventListener("click",exportExcel);
+  $("closeBtn").addEventListener("click",closeForm);
+
+  $("reopenBtn").addEventListener("click",async () => {
+    if (app.session?.status === "active") {
+      await resumeSession();
+    } else {
+      showScreen("welcome");
+    }
+  });
+
+  $("newBtn").addEventListener("click",() => {
+    app.session = null;
+    app.draft = {};
+    $("client").value = "";
+    $("date").value = today();
+    applyDraft({});
+    saveSetting("app",app);
+    showScreen("welcome");
+  });
+
+  ["exercise","weight","reps","series","notes"].forEach(id => {
+    $(id).addEventListener("input",scheduleDraftSave);
+    $(id).addEventListener("change",scheduleDraftSave);
+  });
+
+  if (app.session?.status === "active") {
+    await resumeSession();
+  } else if (app.session?.status === "finished") {
+    showScreen("welcome");
+  }
+
+  if (navigator.storage?.persist) {
+    navigator.storage.persist().catch(() => {});
+  }
+}
+
+init().catch(error => {
+  console.error(error);
+  notify("No se pudo abrir el almacenamiento. Comprueba el navegador.");
+});
+</script>
+</body>
+  </html>
+  
