@@ -592,7 +592,53 @@ async function init() {
 
   applyDraft(app.draft);
 
-  $("startBtn").addEventListener("click",async () => {
+  
+$("startBtn").addEventListener("click", async () => {
+  try {
+    if (app.session?.status === "active") {
+      const ok = confirm(
+        "Existe una sesión pendiente. ¿Deseas descartarla " +
+        "y comenzar con un nuevo usuario? " +
+        "Se borrarán los registros anteriores de este dispositivo."
+      );
+
+      if (!ok) return;
+
+      clearTimeout(draftTimer);
+
+      const tx = db.transaction(
+        ["records", "settings"],
+        "readwrite"
+      );
+
+      tx.objectStore("records").clear();
+      tx.objectStore("settings").clear();
+
+      await new Promise((resolve, reject) => {
+        tx.oncomplete = resolve;
+        tx.onerror = () => reject(tx.error);
+        tx.onabort = () => reject(tx.error);
+      });
+
+      records = [];
+      app = {
+        session: null,
+        draft: {},
+        screen: "welcome"
+      };
+    }
+
+    await beginSession();
+
+  } catch (error) {
+    console.error(error);
+    notify(
+      "No se pudo iniciar el entrenamiento. " +
+      "Revisa los datos e inténtalo nuevamente."
+    );
+  }
+});
+
     if (app.session?.status === "active") {
       const ok = confirm(
         "Hay una sesión pendiente. ¿Quieres iniciar otra? " +
