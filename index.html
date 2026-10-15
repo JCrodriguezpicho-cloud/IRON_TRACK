@@ -618,12 +618,19 @@ function scheduleDraftSave() {
 }
 
 
+
 function applyDraft(draft = {}) {
   const oldValue = draft.exercise || "";
 
   const match = EXERCISES.find(([code, name]) =>
     code === oldValue || name === oldValue
   );
+
+  if (match) {
+    $("exerciseSearch").value = match[1];
+  } else {
+    $("exerciseSearch").value = "";
+  }
 
   renderExercises(
     $("exerciseSearch").value,
@@ -724,10 +731,12 @@ const record = {
 };
 
   try {
-    await addRecord(record);
-    // No se limpia el formulario hasta confirmar el guardado.
-    applyDraft({});
-    app.draft = {};
+await addRecord(record);
+
+// Limpiar búsqueda y campos después de confirmar el guardado.
+$("exerciseSearch").value = "";
+applyDraft({});
+app.draft = {};
     await saveSetting("app",app);
     await refresh();
     render();
@@ -1036,7 +1045,6 @@ $("exercise").addEventListener("change", () => {
   $(id).addEventListener("change", scheduleDraftSave);
 });
 
-renderExercises();
 
   if (app.session?.status === "active") {
     await resumeSession();
