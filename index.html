@@ -101,59 +101,22 @@ button:disabled { opacity:.45; cursor:not-allowed }
   <div id="entry" class="panel">
     <h2>Nuevo registro</h2>
 
-    <label for="exercise">Ejercicio</label>
-   
+<label for="exerciseSearch">Buscar ejercicio por nombre</label>
+<input
+  id="exerciseSearch"
+  type="search"
+  placeholder="Escribe el nombre del ejercicio..."
+  autocomplete="off"
+>
+
+<label for="exercise">Seleccionar ejercicio</label>
 <select id="exercise" name="exercise" required>
-  <optgroup label="Piernas y cuádriceps">
-    <option value="Sentadilla libre">Sentadilla libre</option>
-    <option value="Sentadilla en máquina Smith">Sentadilla en máquina Smith</option>
-    <option value="Prensa de piernas">Prensa de piernas</option>
-    <option value="Elevación de talones para gemelos">Elevación de talones para gemelos</option>
-    <option value="Extensión de cuádriceps">Extensión de cuádriceps</option>
-    <option value="Aducción de cadera en máquina">Aducción de cadera en máquina</option>
-    <option value="Zancadas">Zancadas</option>
-    <option value="Sentadilla búlgara">Sentadilla búlgara</option>
-    <option value="Zancadas con mancuernas">Zancadas con mancuernas</option>
-  </optgroup>
-
-  <optgroup label="Isquiotibiales y peso muerto">
-    <option value="Peso muerto rumano">Peso muerto rumano</option>
-    <option value="Peso muerto sumo">Peso muerto sumo</option>
-    <option value="Curl femoral sentado en máquina">Curl femoral sentado en máquina</option>
-    <option value="Curl femoral de pie en máquina">Curl femoral de pie en máquina</option>
-    <option value="Curl femoral tumbado en máquina">Curl femoral tumbado en máquina</option>
-  </optgroup>
-
-  <optgroup label="Glúteos y cadera">
-    <option value="Patada de glúteos en máquina o polea">Patada de glúteos en máquina o polea</option>
-    <option value="Abducción de cadera en máquina">Abducción de cadera en máquina</option>
-    <option value="Hip thrust (empuje de cadera)">Hip thrust (empuje de cadera)</option>
-  </optgroup>
-
-  <optgroup label="Espalda">
-    <option value="Jalón al pecho con agarre supino">Jalón al pecho con agarre supino</option>
-    <option value="Remo sentado en banco">Remo sentado en banco</option>
-    <option value="Jalón al pecho con agarre prono">Jalón al pecho con agarre prono</option>
-  </optgroup>
-
-  <optgroup label="Hombros">
-    <option value="Press de hombros">Press de hombros</option>
-    <option value="Elevaciones laterales de hombros">Elevaciones laterales de hombros</option>
-  </optgroup>
-
-  <optgroup label="Bíceps">
-    <option value="Curl de bíceps con mancuernas">Curl de bíceps con mancuernas</option>
-    <option value="Curl de bíceps concentrado">Curl de bíceps concentrado</option>
-    <option value="Curl de bíceps en banco inclinado a 30°">Curl de bíceps en banco inclinado a 30°</option>
-  </optgroup>
-
-  <optgroup label="Tríceps">
-    <option value="Extensión de tríceps en polea alta">Extensión de tríceps en polea alta</option>
-    <option value="Extensión de tríceps por encima de la cabeza">Extensión de tríceps por encima de la cabeza</option>
-    <option value="Patada de tríceps con mancuerna">Patada de tríceps con mancuerna</option>
-    <option value="Extensión de tríceps tumbado (rompecráneos)">Extensión de tríceps tumbado (rompecráneos)</option>
-  </optgroup>
+  <option value="">Escribe para buscar un ejercicio</option>
 </select>
+
+<p id="exerciseInfo" class="muted">
+  Empieza a escribir para filtrar los ejercicios disponibles.
+</p>
 
     <div class="row">
       <div>
@@ -221,6 +184,330 @@ const $ = id => document.getElementById(id);
 const DB_NAME = "IronTrackLocal";
 const DB_VERSION = 1;
 
+
+const EXERCISES = [
+  // PIERNAS Y GLÚTEOS
+  ["PIER001","Sentadilla con barra alta","Piernas y glúteos"],
+  ["PIER002","Sentadilla con barra baja","Piernas y glúteos"],
+  ["PIER003","Sentadilla frontal con barra","Piernas y glúteos"],
+  ["PIER004","Sentadilla goblet","Piernas y glúteos"],
+  ["PIER005","Sentadilla con mancuernas","Piernas y glúteos"],
+  ["PIER006","Sentadilla en multipower","Piernas y glúteos"],
+  ["PIER007","Sentadilla hack","Piernas y glúteos"],
+  ["PIER008","Sentadilla sissy","Piernas y glúteos"],
+  ["PIER009","Sentadilla con talones elevados","Piernas y glúteos"],
+  ["PIER010","Sentadilla con pausa","Piernas y glúteos"],
+  ["PIER011","Sentadilla con tempo controlado","Piernas y glúteos"],
+  ["PIER012","Sentadilla a caja","Piernas y glúteos"],
+  ["PIER013","Sentadilla con cinturón","Piernas y glúteos"],
+  ["PIER014","Prensa de piernas inclinada a 45°","Piernas y glúteos"],
+  ["PIER015","Prensa de piernas horizontal","Piernas y glúteos"],
+  ["PIER016","Prensa de piernas vertical","Piernas y glúteos"],
+  ["PIER017","Prensa de piernas unilateral","Piernas y glúteos"],
+  ["PIER018","Prensa con pies altos","Piernas y glúteos"],
+  ["PIER019","Prensa con pies bajos","Piernas y glúteos"],
+  ["PIER020","Prensa con postura estrecha","Piernas y glúteos"],
+  ["PIER021","Prensa con postura amplia","Piernas y glúteos"],
+  ["PIER022","Extensión de piernas bilateral","Piernas y glúteos"],
+  ["PIER023","Extensión de piernas unilateral","Piernas y glúteos"],
+  ["PIER024","Extensión de piernas con pausa","Piernas y glúteos"],
+  ["PIER025","Curl femoral tumbado","Piernas y glúteos"],
+  ["PIER026","Curl femoral sentado","Piernas y glúteos"],
+  ["PIER027","Curl femoral de pie","Piernas y glúteos"],
+  ["PIER028","Curl femoral unilateral","Piernas y glúteos"],
+  ["PIER029","Curl femoral con fitball","Piernas y glúteos"],
+  ["PIER030","Curl femoral con deslizadores","Piernas y glúteos"],
+  ["PIER031","Curl nórdico de isquiotibiales","Piernas y glúteos"],
+  ["PIER032","Curl femoral con banda elástica","Piernas y glúteos"],
+  ["PIER033","Peso muerto convencional","Piernas y glúteos"],
+  ["PIER034","Peso muerto sumo","Piernas y glúteos"],
+  ["PIER035","Peso muerto rumano con barra","Piernas y glúteos"],
+  ["PIER036","Peso muerto rumano con mancuernas","Piernas y glúteos"],
+  ["PIER037","Peso muerto rumano unilateral","Piernas y glúteos"],
+  ["PIER038","Peso muerto con barra hexagonal","Piernas y glúteos"],
+  ["PIER039","Peso muerto con piernas rígidas","Piernas y glúteos"],
+  ["PIER040","Peso muerto desde bloques","Piernas y glúteos"],
+  ["PIER041","Peso muerto con déficit","Piernas y glúteos"],
+  ["PIER042","Peso muerto con kettlebell","Piernas y glúteos"],
+  ["PIER043","Buenos días con barra","Piernas y glúteos"],
+  ["PIER044","Pull-through en polea","Piernas y glúteos"],
+  ["PIER045","Hip thrust con barra","Piernas y glúteos"],
+  ["PIER046","Hip thrust con mancuerna","Piernas y glúteos"],
+  ["PIER047","Hip thrust en máquina","Piernas y glúteos"],
+  ["PIER048","Hip thrust en multipower","Piernas y glúteos"],
+  ["PIER049","Hip thrust unilateral","Piernas y glúteos"],
+  ["PIER050","Puente de glúteos en el suelo","Piernas y glúteos"],
+  ["PIER051","Puente de glúteos con barra","Piernas y glúteos"],
+  ["PIER052","Puente Kas","Piernas y glúteos"],
+  ["PIER053","Frog pumps","Piernas y glúteos"],
+  ["PIER054","Patada de glúteo en polea","Piernas y glúteos"],
+  ["PIER055","Patada de glúteo en máquina","Piernas y glúteos"],
+  ["PIER056","Extensión de cadera en banco a 45°","Piernas y glúteos"],
+  ["PIER057","Extensión de cadera en máquina","Piernas y glúteos"],
+  ["PIER058","Sentadilla búlgara con mancuernas","Piernas y glúteos"],
+  ["PIER059","Sentadilla búlgara con barra","Piernas y glúteos"],
+  ["PIER060","Sentadilla búlgara en multipower","Piernas y glúteos"],
+  ["PIER061","Sentadilla dividida","Piernas y glúteos"],
+  ["PIER062","Zancadas hacia delante","Piernas y glúteos"],
+  ["PIER063","Zancadas hacia atrás","Piernas y glúteos"],
+  ["PIER064","Zancadas caminando","Piernas y glúteos"],
+  ["PIER065","Zancadas laterales","Piernas y glúteos"],
+  ["PIER066","Zancadas cruzadas","Piernas y glúteos"],
+  ["PIER067","Zancadas con barra","Piernas y glúteos"],
+  ["PIER068","Zancadas con mancuernas","Piernas y glúteos"],
+  ["PIER069","Step-up al cajón","Piernas y glúteos"],
+  ["PIER070","Step-up lateral","Piernas y glúteos"],
+  ["PIER071","Sentadilla a una pierna asistida","Piernas y glúteos"],
+  ["PIER072","Sentadilla pistol","Piernas y glúteos"],
+  ["PIER073","Elevación de talones de pie","Piernas y glúteos"],
+  ["PIER074","Elevación de talones sentado","Piernas y glúteos"],
+  ["PIER075","Elevación de talones en prensa","Piernas y glúteos"],
+  ["PIER076","Elevación de talones unilateral","Piernas y glúteos"],
+  ["PIER077","Elevación de talones en multipower","Piernas y glúteos"],
+  ["PIER078","Elevación de talones en escalón","Piernas y glúteos"],
+  ["PIER079","Elevación de talones con mancuernas","Piernas y glúteos"],
+  ["PIER080","Elevación de talones con rodillas flexionadas","Piernas y glúteos"],
+  ["PIER081","Elevación de talones con rodillas extendidas","Piernas y glúteos"],
+  ["PIER082","Aducción de cadera en máquina","Piernas y glúteos"],
+  ["PIER083","Aducción de cadera en polea","Piernas y glúteos"],
+  ["PIER084","Aducción de cadera tumbado de lado","Piernas y glúteos"],
+  ["PIER085","Aducción de cadera con banda","Piernas y glúteos"],
+  ["PIER086","Abducción de cadera en máquina","Piernas y glúteos"],
+  ["PIER087","Abducción de cadera en polea","Piernas y glúteos"],
+  ["PIER088","Abducción de cadera tumbado de lado","Piernas y glúteos"],
+  ["PIER089","Caminata lateral con banda","Piernas y glúteos"],
+  ["PIER090","Monster walk con banda","Piernas y glúteos"],
+  ["PIER091","Abducción de cadera en cuadrupedia","Piernas y glúteos"],
+  ["PIER092","Elevación lateral de pierna","Piernas y glúteos"],
+  ["PIER093","Extensión terminal de rodilla con banda","Piernas y glúteos"],
+  ["PIER094","Sentadilla española","Piernas y glúteos"],
+  ["PIER095","Peso muerto rumano a una pierna","Piernas y glúteos"],
+  ["PIER096","Curl nórdico asistido","Piernas y glúteos"],
+  ["PIER097","Extensión de cadera en cuadrupedia","Piernas y glúteos"],
+  ["PIER098","Hip thrust con banda elástica","Piernas y glúteos"],
+
+  // PECHO
+  ["PEC001","Press de banca plano con barra","Pecho"],
+  ["PEC002","Press de banca inclinado con barra","Pecho"],
+  ["PEC003","Press de banca declinado con barra","Pecho"],
+  ["PEC004","Press plano con mancuernas","Pecho"],
+  ["PEC005","Press inclinado con mancuernas","Pecho"],
+  ["PEC006","Press declinado con mancuernas","Pecho"],
+  ["PEC007","Aperturas con mancuernas en banco plano","Pecho"],
+  ["PEC008","Aperturas con mancuernas en banco inclinado","Pecho"],
+  ["PEC009","Pec deck","Pecho"],
+  ["PEC010","Cruces de polea alta","Pecho"],
+  ["PEC011","Cruces de polea baja","Pecho"],
+  ["PEC012","Cruces de polea a media altura","Pecho"],
+  ["PEC013","Fondos en paralelas para pecho","Pecho"],
+  ["PEC014","Flexiones de brazos","Pecho"],
+  ["PEC015","Flexiones inclinadas","Pecho"],
+  ["PEC016","Flexiones declinadas","Pecho"],
+  ["PEC017","Press de pecho en máquina","Pecho"],
+  ["PEC018","Press convergente en máquina","Pecho"],
+
+  // ESPALDA
+  ["ESP001","Jalón al pecho con agarre prono","Espalda"],
+  ["ESP002","Jalón al pecho con agarre supino","Espalda"],
+  ["ESP003","Jalón al pecho con agarre neutro","Espalda"],
+  ["ESP004","Dominadas pronas","Espalda"],
+  ["ESP005","Dominadas supinas","Espalda"],
+  ["ESP006","Remo sentado en polea","Espalda"],
+  ["ESP007","Remo en polea baja","Espalda"],
+  ["ESP008","Remo con mancuerna a una mano","Espalda"],
+  ["ESP009","Remo con barra","Espalda"],
+  ["ESP010","Remo con pecho apoyado","Espalda"],
+  ["ESP011","Remo en máquina","Espalda"],
+  ["ESP012","Remo en TRX","Espalda"],
+  ["ESP013","Pullover en polea","Espalda"],
+  ["ESP014","Pullover con mancuerna","Espalda"],
+  ["ESP015","Remo invertido","Espalda"],
+  ["ESP016","Jalón con brazos rectos","Espalda"],
+  ["ESP017","Peso muerto para espalda y cadena posterior","Espalda"],
+  ["ESP018","Encogimientos de hombros con mancuernas","Espalda"],
+
+  // HOMBROS
+  ["HOM001","Press militar con barra","Hombros"],
+  ["HOM002","Press militar con mancuernas","Hombros"],
+  ["HOM003","Press de hombros en máquina","Hombros"],
+  ["HOM004","Elevaciones laterales con mancuernas","Hombros"],
+  ["HOM005","Elevaciones laterales en polea","Hombros"],
+  ["HOM006","Elevaciones frontales con mancuernas","Hombros"],
+  ["HOM007","Elevaciones frontales con disco","Hombros"],
+  ["HOM008","Pájaros con mancuernas","Hombros"],
+  ["HOM009","Pájaros en máquina","Hombros"],
+  ["HOM010","Face pull en polea","Hombros"],
+  ["HOM011","Remo al mentón con barra","Hombros"],
+  ["HOM012","Press Arnold","Hombros"],
+
+  // BÍCEPS
+  ["BIC001","Curl de bíceps con barra","Bíceps"],
+  ["BIC002","Curl de bíceps con barra Z","Bíceps"],
+  ["BIC003","Curl alterno con mancuernas","Bíceps"],
+  ["BIC004","Curl martillo con mancuernas","Bíceps"],
+  ["BIC005","Curl concentrado","Bíceps"],
+  ["BIC006","Curl en banco inclinado","Bíceps"],
+  ["BIC007","Curl predicador","Bíceps"],
+  ["BIC008","Curl de bíceps en polea","Bíceps"],
+  ["BIC009","Curl de bíceps en máquina","Bíceps"],
+  ["BIC010","Curl martillo con cuerda","Bíceps"],
+
+  // TRÍCEPS
+  ["TRI001","Extensión de tríceps en polea alta","Tríceps"],
+  ["TRI002","Extensión de tríceps con cuerda","Tríceps"],
+  ["TRI003","Extensión de tríceps por encima de la cabeza","Tríceps"],
+  ["TRI004","Rompecráneos con barra Z","Tríceps"],
+  ["TRI005","Extensión de tríceps tumbado con mancuernas","Tríceps"],
+  ["TRI006","Patada de tríceps con mancuerna","Tríceps"],
+  ["TRI007","Fondos para tríceps en banco","Tríceps"],
+  ["TRI008","Fondos en paralelas para tríceps","Tríceps"],
+  ["TRI009","Extensión unilateral de tríceps en polea","Tríceps"],
+  ["TRI010","Press de banca con agarre cerrado","Tríceps"],
+
+  // ANTEBRAZOS Y AGARRE
+  ["ANT001","Curl de muñeca con barra","Antebrazos"],
+  ["ANT002","Curl inverso de muñeca","Antebrazos"],
+  ["ANT003","Curl inverso con barra Z","Antebrazos"],
+  ["ANT004","Farmer's walk con mancuernas","Antebrazos"],
+  ["ANT005","Dead hang en barra","Antebrazos"],
+  ["ANT006","Pinza de discos","Antebrazos"],
+
+  // ABDOMEN Y CORE
+  ["CORE001","Crunch abdominal en el suelo","Core"],
+  ["CORE002","Crunch abdominal con disco","Core"],
+  ["CORE003","Crunch abdominal en polea","Core"],
+  ["CORE004","Crunch abdominal en máquina","Core"],
+  ["CORE005","Crunch declinado","Core"],
+  ["CORE006","Crunch inverso","Core"],
+  ["CORE007","Sit-up tradicional","Core"],
+  ["CORE008","Elevación de piernas colgado","Core"],
+  ["CORE009","Elevación de rodillas en silla romana","Core"],
+  ["CORE010","Plancha frontal","Core"],
+  ["CORE011","Plancha lateral","Core"],
+  ["CORE012","Dead bug","Core"],
+  ["CORE013","Bird dog","Core"],
+  ["CORE014","Ab wheel rollout","Core"],
+  ["CORE015","Mountain climbers","Core"],
+  ["CORE016","Giros rusos","Core"],
+  ["CORE017","Woodchop en polea","Core"],
+  ["CORE018","Pallof press","Core"],
+  ["CORE019","Crunch bicicleta","Core"],
+  ["CORE020","V-ups","Core"],
+  ["CORE021","Toques de talón","Core"],
+  ["CORE022","Plancha con toque de hombros","Core"],
+
+  // ZONA LUMBAR
+  ["LUM001","Extensión lumbar en banco a 45°","Lumbar"],
+  ["LUM002","Extensión lumbar en máquina","Lumbar"],
+  ["LUM003","Buenos días con banda elástica","Lumbar"],
+  ["LUM004","Superman en el suelo","Lumbar"],
+  ["LUM005","Reverse hyperextension","Lumbar"],
+
+  // FUNCIONAL Y POTENCIA
+  ["FUNC001","Kettlebell swing ruso","Funcional"],
+  ["FUNC002","Kettlebell swing americano","Funcional"],
+  ["FUNC003","Kettlebell swing a una mano","Funcional"],
+  ["FUNC004","Kettlebell clean","Funcional"],
+  ["FUNC005","Kettlebell snatch","Funcional"],
+  ["FUNC006","Turkish get-up","Funcional"],
+  ["FUNC007","Battle ropes con ondas alternas","Funcional"],
+  ["FUNC008","Battle ropes con golpes al suelo","Funcional"],
+  ["FUNC009","Wall ball","Funcional"],
+  ["FUNC010","Slam ball","Funcional"],
+  ["FUNC011","Burpees","Funcional"],
+  ["FUNC012","Saltos al cajón","Funcional"],
+  ["FUNC013","Saltos en sentadilla","Funcional"],
+  ["FUNC014","Bear crawl","Funcional"],
+  ["FUNC015","Farmer's walk","Funcional"],
+  ["FUNC016","Suitcase carry unilateral","Funcional"],
+  ["FUNC017","Empuje de trineo","Funcional"],
+  ["FUNC018","Arrastre de trineo","Funcional"],
+  ["FUNC019","Sentadilla con TRX","Funcional"],
+  ["FUNC020","Curl femoral con TRX","Funcional"],
+
+  // CARDIO
+  ["CARD001","Carrera en cinta","Cardio"],
+  ["CARD002","Caminata en cinta con inclinación","Cardio"],
+  ["CARD003","Bicicleta estática","Cardio"],
+  ["CARD004","Bicicleta de aire","Cardio"],
+  ["CARD005","Bicicleta de spinning","Cardio"],
+  ["CARD006","Elíptica","Cardio"],
+  ["CARD007","Máquina de remo","Cardio"],
+  ["CARD008","SkiErg","Cardio"],
+  ["CARD009","Escaladora","Cardio"],
+  ["CARD010","Saltar la cuerda","Cardio"],
+  ["CARD011","Intervalos de carrera","Cardio"],
+  ["CARD012","Caminata rápida","Cardio"],
+  ["CARD013","Carrera continua","Cardio"],
+  ["CARD014","Subida de escaleras","Cardio"]
+];
+
+
+function normalizeText(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function renderExercises(search = "", selectedCode = "") {
+  const select = $("exercise");
+  const query = normalizeText(search);
+
+  // La búsqueda utiliza exclusivamente el nombre.
+  const filtered = EXERCISES.filter(([, name]) =>
+    normalizeText(name).includes(query)
+  );
+
+  select.replaceChildren();
+
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = filtered.length
+    ? "Selecciona un ejercicio"
+    : "No se encontraron ejercicios";
+  select.append(placeholder);
+
+  const groups = new Map();
+
+  filtered.forEach(([code, name, family]) => {
+    if (!groups.has(family)) groups.set(family, []);
+
+    groups.get(family).push({ code, name });
+  });
+
+  groups.forEach((items, family) => {
+    const group = document.createElement("optgroup");
+    group.label = family;
+
+    items.forEach(({ code, name }) => {
+      const option = document.createElement("option");
+      option.value = code;
+      option.textContent = name;
+
+      if (code === selectedCode) {
+        option.selected = true;
+      }
+
+      group.append(option);
+    });
+
+    select.append(group);
+  });
+
+  updateExerciseInfo();
+}
+
+function updateExerciseInfo() {
+  const code = $("exercise").value;
+  const exercise = EXERCISES.find(item => item[0] === code);
+
+  $("exerciseInfo").textContent = exercise
+    ? `Código: ${exercise[0]} · Familia: ${exercise[2]}`
+    : "Selecciona un ejercicio de la lista.";
+}
+  
 let db;
 let app = {
   session: null,
@@ -299,6 +586,7 @@ function addRecord(record) {
   });
 }
 
+
 function getDraftFromForm() {
   return {
     exercise: $("exercise").value,
@@ -329,8 +617,19 @@ function scheduleDraftSave() {
   draftTimer = setTimeout(persistDraft,250);
 }
 
-function applyDraft(draft={}) {
-  $("exercise").value = draft.exercise || "Sentadilla libre";
+
+function applyDraft(draft = {}) {
+  const oldValue = draft.exercise || "";
+
+  const match = EXERCISES.find(([code, name]) =>
+    code === oldValue || name === oldValue
+  );
+
+  renderExercises(
+    $("exerciseSearch").value,
+    match ? match[0] : ""
+  );
+
   $("weight").value = draft.weight ?? "";
   $("reps").value = draft.reps ?? "";
   $("series").value = draft.series || "1";
@@ -400,17 +699,29 @@ async function saveExercise() {
 
   clearTimeout(draftTimer);
 
-  const record = {
-    sessionId:app.session.id,
-    client:app.session.client,
-    date:app.session.date,
-    exercise:$("exercise").value,
-    weight:Number(weight),
-    reps:Number(reps),
-    series:Number($("series").value),
-    notes:$("notes").value.trim(),
-    savedAt:new Date().toISOString()
-  };
+
+const selectedExercise = EXERCISES.find(
+  item => item[0] === $("exercise").value
+);
+
+if (!selectedExercise) {
+  notify("Selecciona un ejercicio válido del catálogo.");
+  return;
+}
+
+const record = {
+  sessionId: app.session.id,
+  client: app.session.client,
+  date: app.session.date,
+  exerciseCode: selectedExercise[0],
+  exercise: selectedExercise[1],
+  exerciseFamily: selectedExercise[2],
+  weight: Number(weight),
+  reps: Number(reps),
+  series: Number($("series").value),
+  notes: $("notes").value.trim(),
+  savedAt: new Date().toISOString()
+};
 
   try {
     await addRecord(record);
@@ -511,22 +822,26 @@ async function exportExcel() {
     return;
   }
 
-  const rows = records.map(r => ({
-    "Fecha":r.date,
-    "Cliente":r.client,
-    "Ejercicio":r.exercise,
-    "Peso (kg)":r.weight,
-    "Repeticiones":r.reps,
-    "Serie":r.series,
-    "Observaciones":r.notes,
-    "Fecha y hora de guardado":r.savedAt
-  }));
+
+const rows = records.map(r => ({
+  "Fecha": r.date,
+  "Cliente": r.client,
+  "Código": r.exerciseCode || "",
+  "Ejercicio": r.exercise,
+  "Familia": r.exerciseFamily || "",
+  "Peso (kg)": r.weight,
+  "Repeticiones": r.reps,
+  "Serie": r.series,
+  "Observaciones": r.notes,
+  "Fecha y hora de guardado": r.savedAt
+}));
 
   const sheet = XLSX.utils.json_to_sheet(rows);
-  sheet["!cols"] = [
-    {wch:13},{wch:25},{wch:35},{wch:12},
-    {wch:14},{wch:10},{wch:40},{wch:25}
-  ];
+
+sheet["!cols"] = [
+  {wch:13}, {wch:25}, {wch:12}, {wch:40}, {wch:20},
+  {wch:12}, {wch:14}, {wch:10}, {wch:40}, {wch:25}
+];
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook,sheet,"Entrenamientos");
@@ -706,10 +1021,22 @@ $("startBtn").addEventListener("click", async () => {
     showScreen("welcome");
   });
 
-  ["exercise","weight","reps","series","notes"].forEach(id => {
-    $(id).addEventListener("input",scheduleDraftSave);
-    $(id).addEventListener("change",scheduleDraftSave);
-  });
+
+$("exerciseSearch").addEventListener("input", () => {
+  renderExercises($("exerciseSearch").value);
+});
+
+$("exercise").addEventListener("change", () => {
+  updateExerciseInfo();
+  scheduleDraftSave();
+});
+
+["weight", "reps", "series", "notes"].forEach(id => {
+  $(id).addEventListener("input", scheduleDraftSave);
+  $(id).addEventListener("change", scheduleDraftSave);
+});
+
+renderExercises();
 
   if (app.session?.status === "active") {
     await resumeSession();
