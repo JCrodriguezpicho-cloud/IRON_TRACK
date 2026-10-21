@@ -62,6 +62,57 @@ button:disabled { opacity:.45; cursor:not-allowed }
 .actions button { flex:1; min-width:130px }
 #notice { min-height:20px; color:var(--gold); font-size:13px }
 [hidden] { display:none !important }
+
+.exercise-picker {
+  position: relative;
+}
+
+.exercise-picker input {
+  width: 100%;
+}
+
+.exercise-options {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  max-height: 280px;
+  overflow-y: auto;
+  background: #22252a;
+  border: 1px solid #484c53;
+  border-radius: 10px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4);
+}
+
+.exercise-group {
+  padding: 10px 12px 5px;
+  color: #d9ac52;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-top: 1px solid #3b3f45;
+}
+
+.exercise-option {
+  padding: 12px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.exercise-option:hover,
+.exercise-option:focus {
+  background: #34383f;
+  outline: none;
+}
+
+.exercise-empty {
+  padding: 14px;
+  color: #aeb3bb;
+  font-size: 14px;
+}
+
+  
 </style>
 
 <!-- Necesaria para generar archivos .xlsx -->
@@ -101,22 +152,35 @@ button:disabled { opacity:.45; cursor:not-allowed }
   <div id="entry" class="panel">
     <h2>Nuevo registro</h2>
 
-<label for="exerciseSearch">Buscar ejercicio por nombre</label>
-<input
-  id="exerciseSearch"
-  type="search"
-  placeholder="Escribe el nombre del ejercicio..."
-  autocomplete="off"
->
 
-<label for="exercise">Seleccionar ejercicio</label>
-<select id="exercise" name="exercise" required>
-  <option value="">Escribe para buscar un ejercicio</option>
-</select>
+<label for="exerciseSearch">Seleccionar ejercicio</label>
+
+<div class="exercise-picker" id="exercisePicker">
+  <input
+    id="exerciseSearch"
+    type="text"
+    placeholder="Escribe para buscar un ejercicio..."
+    autocomplete="off"
+    role="combobox"
+    aria-autocomplete="list"
+    aria-expanded="false"
+    aria-controls="exerciseOptions"
+  >
+
+  <div
+    id="exerciseOptions"
+    class="exercise-options"
+    role="listbox"
+    hidden
+  ></div>
+</div>
+
+<input type="hidden" id="exercise" name="exercise">
 
 <p id="exerciseInfo" class="muted">
-  Empieza a escribir para filtrar los ejercicios disponibles.
+  Escribe para filtrar y selecciona un ejercicio de la lista.
 </p>
+
 
     <div class="row">
       <div>
@@ -451,52 +515,78 @@ function normalizeText(value) {
     .trim();
 }
 
+
 function renderExercises(search = "", selectedCode = "") {
-  const select = $("exercise");
+  const input = $("exerciseSearch");
+  const options = $("exerciseOptions");
+  const hidden = $("exercise");
   const query = normalizeText(search);
 
-  // La búsqueda utiliza exclusivamente el nombre.
   const filtered = EXERCISES.filter(([, name]) =>
     normalizeText(name).includes(query)
   );
 
-  select.replaceChildren();
+  options.replaceChildren();
 
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = filtered.length
-    ? "Selecciona un ejercicio"
-    : "No se encontraron ejercicios";
-  select.append(placeholder);
+  if (!filtered.length) {
+    const empty = document.createElement("div");
+    empty.className = "exercise-empty";
+    empty.textContent = "No se encontraron ejercicios.";
+    options.append(empty);
+  } else {
+    const groups = new Map();
 
-  const groups = new Map();
-
-  filtered.forEach(([code, name, family]) => {
-    if (!groups.has(family)) groups.set(family, []);
-
-    groups.get(family).push({ code, name });
-  });
-
-  groups.forEach((items, family) => {
-    const group = document.createElement("optgroup");
-    group.label = family;
-
-    items.forEach(({ code, name }) => {
-      const option = document.createElement("option");
-      option.value = code;
-      option.textContent = name;
-
-      if (code === selectedCode) {
-        option.selected = true;
-      }
-
-      group.append(option);
+    filtered.forEach(([code, name, family]) => {
+      if (!groups.has(family)) groups.set(family, []);
+      groups.get(family).push({ code, name });
     });
 
-    select.append(group);
-  });
+    groups.forEach((items, family) => {
+      const heading = document.createElement("div");
+      heading.className = "exercise-group";
+      heading.textContent = family;
+      options.append(heading);
+
+      items.forEach(({ code, name }) => {
+        const option = document.createElement("div");
+        option.className = "exercise-option";
+        option.setAttribute("role", "option");
+        option.setAttribute("tabindex", "0");
+        option.setAttribute("aria-selected",
+          code === selectedCode ? "true" : "false"
+        );
+        option.textContent = name;
+
+        const choose = () => selectExercise(code);
+
+        option.addEventListener("click", choose);
+        option.addEventListener("keydown", event => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            choose();
+          }
+        });
+
+        options.append(option);
+      });
+    });
+  }
+
+  options.hidden = false;
+  input.setAttribute("aria-expanded", "true");
+}
+
+function selectExercise(code) {
+  const exercise = EXERCISES.find(item => item[0] === code);
+  if (!exercise) return;
+
+  $("exercise").value = exercise[0];
+  $("exerciseSearch").value = exercise[1];
+  $("exerciseOptions").hidden = true;
+  $("exerciseSearch").setAttribute("aria-expanded", "false");
 
   updateExerciseInfo();
+  scheduleDraftSave();
 }
 
 function updateExerciseInfo() {
@@ -505,7 +595,7 @@ function updateExerciseInfo() {
 
   $("exerciseInfo").textContent = exercise
     ? `Código: ${exercise[0]} · Familia: ${exercise[2]}`
-    : "Selecciona un ejercicio de la lista.";
+    : "Escribe para filtrar y selecciona un ejercicio de la lista.";
 }
   
 let db;
@@ -619,6 +709,7 @@ function scheduleDraftSave() {
 
 
 
+
 function applyDraft(draft = {}) {
   const oldValue = draft.exercise || "";
 
@@ -626,16 +717,12 @@ function applyDraft(draft = {}) {
     code === oldValue || name === oldValue
   );
 
-  if (match) {
-    $("exerciseSearch").value = match[1];
-  } else {
-    $("exerciseSearch").value = "";
-  }
+  $("exercise").value = match ? match[0] : "";
+  $("exerciseSearch").value = match ? match[1] : "";
+  $("exerciseOptions").hidden = true;
+  $("exerciseSearch").setAttribute("aria-expanded", "false");
 
-  renderExercises(
-    $("exerciseSearch").value,
-    match ? match[0] : ""
-  );
+  updateExerciseInfo();
 
   $("weight").value = draft.weight ?? "";
   $("reps").value = draft.reps ?? "";
@@ -1031,14 +1118,59 @@ $("startBtn").addEventListener("click", async () => {
   });
 
 
-$("exerciseSearch").addEventListener("input", () => {
-  renderExercises($("exerciseSearch").value);
-});
 
-$("exercise").addEventListener("change", () => {
+$("exerciseSearch").addEventListener("input", () => {
+  // Al editar la búsqueda, se invalida la selección anterior.
+  $("exercise").value = "";
   updateExerciseInfo();
+  renderExercises($("exerciseSearch").value);
   scheduleDraftSave();
 });
+
+$("exerciseSearch").addEventListener("focus", () => {
+  renderExercises(
+    $("exerciseSearch").value,
+    $("exercise").value
+  );
+});
+
+$("exerciseSearch").addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    $("exerciseOptions").hidden = true;
+    $("exerciseSearch").setAttribute("aria-expanded", "false");
+  }
+
+  if (event.key === "Enter") {
+    const first = $("exerciseOptions").querySelector(
+      ".exercise-option"
+    );
+
+    if (!$("exerciseOptions").hidden && first) {
+      event.preventDefault();
+      const index = Array.from(
+        $("exerciseOptions").querySelectorAll(".exercise-option")
+      ).indexOf(first);
+
+      const visible = EXERCISES.filter(([, name]) =>
+        normalizeText(name).includes(
+          normalizeText($("exerciseSearch").value)
+        )
+      );
+
+      if (index >= 0 && visible[index]) {
+        selectExercise(visible[index][0]);
+      }
+    }
+  }
+});
+
+document.addEventListener("click", event => {
+  if (!$("exercisePicker").contains(event.target)) {
+    $("exerciseOptions").hidden = true;
+    $("exerciseSearch").setAttribute("aria-expanded", "false");
+  }
+});
+
 
 ["weight", "reps", "series", "notes"].forEach(id => {
   $(id).addEventListener("input", scheduleDraftSave);
