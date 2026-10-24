@@ -387,6 +387,8 @@ button:disabled { opacity:.45; cursor:not-allowed }
         <div id="anthroSummaryList" class="muted" style="max-height: 200px; overflow-y: auto; margin-bottom: 12px;"></div>
         <button onclick="saveCurrentAnthroSession()">💾 Guardar Medidas Localmente</button>
         <button class="secondary" onclick="exportAnthroToExcel()">📥 Exportar Medidas a Excel</button>
+        <!-- NUEVO BOTÓN DE CIERRE -->
+        <button class="secondary danger" onclick="resetAnthroForm()" style="margin-top: 10px;">❌ Cerrar y Limpiar Formulario</button>
       </div>
     </section>
   </div>
@@ -414,6 +416,8 @@ button:disabled { opacity:.45; cursor:not-allowed }
           <button id="chartPrevBtn" class="secondary" onclick="prevChart()">← Gráfico Anterior</button>
           <button id="chartNextBtn" onclick="nextChart()">Siguiente Gráfico →</button>
         </div>
+        <!-- NUEVO BOTÓN DE CIERRE Y LIMPIEZA -->
+        <button class="secondary danger" onclick="resetAnthroReports()" style="margin-top: 15px;">❌ Cerrar y Limpiar Reporte</button>
       </div>
     </section>
   </div>  
@@ -1419,6 +1423,44 @@ function switchTab(tabId) {
   });
 }
 
+/* ----------------------------------------------------
+   NUEVAS FUNCIONES DE CIERRE Y LIMPIEZA
+---------------------------------------------------- */
+
+// 1. Limpia y reinicia el Formulario Guiado de Antropometría
+function resetAnthroForm() {
+  currentAnthroStep = 0;
+  currentAnthroValues = {};
+
+  if ($("anthroInputValue")) {
+    $("anthroInputValue").value = "";
+  }
+
+  $("anthroSummaryPanel").hidden = true;
+  $("anthroStepCard").hidden = false;
+  renderAnthroStep();
+  
+  notify("Formulario de antropometría cerrado y limpiado para una nueva sesión.");
+}
+
+// 2. Limpia y cierra el Visor de Reportes y Gráficos
+function resetAnthroReports() {
+  importedAnthroData = null;
+  currentChartIndex = 0;
+
+  if ($("excelFileInput")) {
+    $("excelFileInput").value = "";
+  }
+
+  if ($("neonSVG")) {
+    $("neonSVG").innerHTML = "";
+  }
+
+  $("chartViewerPanel").hidden = true;
+
+  notify("Reportes cerrados. Puedes cargar un nuevo archivo Excel.");
+}  
+  
 function initAnthroModule() {
   const select = $("anthroWeekSelect");
   if (!select) return;
