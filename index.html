@@ -1571,6 +1571,7 @@ function renderChart() {
   $("chartPrevBtn").disabled = currentChartIndex === 0;
   $("chartNextBtn").disabled = currentChartIndex === importedAnthroData.metrics.length - 1;
 
+  // Extraer puntos con valor válido
   const dataPoints = importedAnthroData.weeks.map(w => {
     const val = parseFloat(metricRow[w]);
     return { week: w, value: isNaN(val) ? null : val };
@@ -1581,34 +1582,92 @@ function renderChart() {
   if (!dataPoints.length) return;
 
   const width = 500, height = 250, padding = 45;
-  const maxVal = Math.max(...dataPoints.map(d => d.value)) * 1.15 || 10;
-  const getX = i => padding + (i * (width - 2 * padding) / Math.max(1, dataPoints.length - 1));
-  const getY = val => height - padding - (val / maxVal * (height - 2 * padding));
 
+  // 1. Calcular Mínimo y Máximo real para dinamizar la escala
+  const values = dataPoints.map(d => d.value);
+  let minVal = Math.min(...values);
+  let maxVal = Math.max(...values);
+
+  // Si todos los datos son iguales o solo hay 1 punto, creamos un rango sintético
+  if (minVal === maxVal) {
+    minVal = Math.max(0, minVal - 5);
+    maxVal = maxVal + 5;
+  } else {
+    // Agregar un margen del 10% arriba y abajo para que las curvas no toquen los bordes
+    const diff = maxVal - minVal;
+    minVal = Math.max(0, minVal - diff * 0.15);
+    maxVal = maxVal + diff * 0.15;
+  }
+
+  // 2. Funciones de posición X e Y escaladas
+  const getX = i => {
+    if (dataPoints.length === 1) return width / 2;
+    return padding + (i * (width - 2 * padding) / (dataPoints.length - 1));
+  };
+  
+  const getY = val => {
+    const ratio = (val - minVal) / (maxVal - minVal);
+    return height - padding - (ratio * (height - 2 * padding));
+  };
+
+  // 3. Dibujar líneas de guía de fondo (Grid lines horizontales)
+  const gridSteps = 3;
+  for (let g = 0; g <= gridSteps; g++) {
+    const gridY = height - padding - (g * (height - 2 * padding) / gridSteps);
+    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    line.setAttribute("x1", padding);
+    line.setAttribute("y1", gridY);
+    line.setAttribute("x2", width - padding);
+    line.setAttribute("y2", gridY);
+    line.setAttribute("class", "chart-grid");
+    svg.appendChild(line);
+  }
+
+  // 4. Construir la ruta de la línea neón (Path)
   let pathD = "";
   dataPoints.forEach((pt, i) => {
     const x = getX(i), y = getY(pt.value);
     pathD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
   });
 
-  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute("d", pathD);
-  path.setAttribute("class", "chart-line");
-  svg.appendChild(path);
+  if (dataPoints.length > 1) {
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", pathD);
+    path.setAttribute("class", "chart-line");
+    svg.appendChild(path);
+  }
 
+  // 5. Dibujar los puntos, valores numéricos y nombres de las semanas (Eje X)
   dataPoints.forEach((pt, i) => {
     const x = getX(i), y = getY(pt.value);
+
+    // Círculo del punto neón
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circle.setAttribute("cx", x); circle.setAttribute("cy", y); circle.setAttribute("r", "5"); circle.setAttribute("class", "chart-point");
+    circle.setAttribute("cx", x); 
+    circle.setAttribute("cy", y); 
+    circle.setAttribute("r", "5"); 
+    circle.setAttribute("class", "chart-point");
     
-    const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    txt.setAttribute("x", x); txt.setAttribute("y", y - 10); txt.setAttribute("class", "chart-value-label"); txt.textContent = pt.value;
-    
+    // Texto con el valor encima del punto
+    const txtVal = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    txtVal.setAttribute("x", x); 
+    txtVal.setAttribute("y", y - 10); 
+    txtVal.setAttribute("class", "chart-value-label"); 
+    txtVal.textContent = pt.value;
+
+    // Texto de la semana en la parte inferior (Eje X)
+    const txtWeek = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    txtWeek.setAttribute("x", x); 
+    txtWeek.setAttribute("y", height - 15); 
+    txtWeek.setAttribute("class", "chart-axis-text"); 
+    txtWeek.setAttribute("text-anchor", "middle");
+    txtWeek.textContent = pt.week;
+
     svg.appendChild(circle);
-    svg.appendChild(txt);
+    svg.appendChild(txtVal);
+    svg.appendChild(txtWeek);
   });
 }
-
 function nextChart() { if (importedAnthroData && currentChartIndex < importedAnthroData.metrics.length - 1) { currentChartIndex++; renderChart(); } }
 function prevChart() { if (importedAnthroData && currentChartIndex > 0) { currentChartIndex--; renderChart(); } }
   
