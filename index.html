@@ -1571,20 +1571,20 @@ function renderChart() {
   $("chartPrevBtn").disabled = currentChartIndex === 0;
   $("chartNextBtn").disabled = currentChartIndex === importedAnthroData.metrics.length - 1;
 
-  // Extraer puntos con valor válido
-  const dataPoints = importedAnthroData.weeks.map(w => {
+  // 1. Extraer puntos con valor válido
+  const rawPoints = importedAnthroData.weeks.map(w => {
     const val = parseFloat(metricRow[w]);
     return { week: w, value: isNaN(val) ? null : val };
   }).filter(d => d.value !== null);
 
   const svg = $("neonSVG");
   svg.innerHTML = "";
-  if (!dataPoints.length) return;
+  if (!rawPoints.length) return;
 
   const width = 500, height = 250, padding = 45;
 
-  // 1. Calcular Mínimo y Máximo real para dinamizar la escala
-  const values = dataPoints.map(d => d.value);
+  // 2. Calcular Mínimo y Máximo real para la escala
+  const values = rawPoints.map(d => d.value);
   let minVal = Math.min(...values);
   let maxVal = Math.max(...values);
 
@@ -1597,115 +1597,97 @@ function renderChart() {
     maxVal = maxVal + diff * 0.15;
   }
 
-  // 2. Funciones de posición X e Y escaladas
-  const getX = i => {
-    if (dataPoints.length === 1) return width / 2;
-    return padding + (i * (width - 2 * padding) / (dataPoints.length - 1));
-  };
-  
-  const getY = val => {
-    const ratio = (val - minVal) / (maxVal - minVal);
-    return height - padding - (ratio * (height - 2 * padding));
-  };
+  // Coordenadas X e Y para cada punto
+  const points = rawPoints.map((pt, i) => {
+    const x = rawPoints.length === 1 ? width / 2 : padding + (i * (width - 2 * padding) / (rawPoints.length - 1));
+    const ratio = (pt.value - minVal) / (maxVal - minVal);
+    const y = height - padding - (ratio * (height - 2 * padding));
+    return { x, y, week: pt.week, value: pt.value };
+  });
 
-  // 3. Crear el degradado SVG para el efecto Bolsa de Valores (Área bajo la curva)
+  // 3. Crear el degradado SVG (Área bajo la curva)
   const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
   const gradient = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
   gradient.setAttribute("id", "cryptoGradient");
-  gradient.setAttribute("x1", "0%");
-  gradient.setAttribute("y1", "0%");
-  gradient.setAttribute("x2", "0%");
-  gradient.setAttribute("y2", "100%");
+  gradient.setAttribute("x1", "0%"); gradient.setAttribute("y1", "0%");
+  gradient.setAttribute("x2", "0%"); gradient.setAttribute("y2", "100%");
 
   const stop1 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
-  stop1.setAttribute("offset", "0%");
-  stop1.setAttribute("stop-color", "var(--neon)");
-  stop1.setAttribute("stop-opacity", "0.35"); // Brillo superior
-
+  stop1.setAttribute("offset", "0%"); stop1.setAttribute("stop-color", "var(--neon)"); stop1.setAttribute("stop-opacity", "0.35");
   const stop2 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
-  stop2.setAttribute("offset", "100%");
-  stop2.setAttribute("stop-color", "var(--neon)");
-  stop2.setAttribute("stop-opacity", "0.0"); // Se desvanece abajo
+  stop2.setAttribute("offset", "100%"); stop2.setAttribute("stop-color", "var(--neon)"); stop2.setAttribute("stop-opacity", "0.0");
 
   gradient.appendChild(stop1);
   gradient.appendChild(stop2);
   defs.appendChild(gradient);
   svg.appendChild(defs);
 
-  // 4. Dibujar líneas de guía de fondo (Grid lines horizontales)
+  // 4. Dibujar líneas de guía de fondo (Grid lines)
   const gridSteps = 3;
   for (let g = 0; g <= gridSteps; g++) {
     const gridY = height - padding - (g * (height - 2 * padding) / gridSteps);
     const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-    line.setAttribute("x1", padding);
-    line.setAttribute("y1", gridY);
-    line.setAttribute("x2", width - padding);
-    line.setAttribute("y2", gridY);
+    line.setAttribute("x1", padding); line.setAttribute("y1", gridY);
+    line.setAttribute("x2", width - padding); line.setAttribute("y2", gridY);
     line.setAttribute("class", "chart-grid");
     svg.appendChild(line);
   }
 
-  // 5. Construir la ruta de la línea y el área cerrada para el degradado
-  let pathD = "";
-  let areaD = "";
-  const baselineY = height - padding;
+  // 5. Generar rutas de curvas suaves (Ondas Bézier)
+  let pathD = `M ${points[0].x} ${points[0].y}`;
+  
+  if (points.length > 1) {
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = i > 0 ? points[i - 1] : points[0];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = i < points.length - 2 ? points[i + 2] : p2;
 
-  dataPoints.forEach((pt, i) => {
-    const x = getX(i), y = getY(pt.value);
-    if (i === 0) {
-      pathD += `M ${x} ${y}`;
-      areaD += `M ${x} ${baselineY} L ${x} ${y}`;
-    } else {
-      pathD += ` L ${x} ${y}`;
-      areaD += ` L ${x} ${y}`;
+      // Factor de tensión para suavizar las ondas
+      const tension = 0.2;
+      const cp1x = p1.x + (p2.x - p0.x) * tension;
+      const cp1y = p1.y + (p2.y - p0.y) * tension;
+      const cp2x = p2.x - (p3.x - p1.x) * tension;
+      const cp2y = p2.y - (p3.y - p1.y) * tension;
+
+      pathD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
     }
-  });
-
-  // Cerrar el polígono del área hacia la base inferior
-  if (dataPoints.length > 0) {
-    const lastX = getX(dataPoints.length - 1);
-    const firstX = getX(0);
-    areaD += ` L ${lastX} ${baselineY} Z`;
-
-    // Pintar el área sombreada con degradado
-    const areaPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    areaPath.setAttribute("d", areaD);
-    areaPath.setAttribute("fill", "url(#cryptoGradient)");
-    svg.appendChild(areaPath);
   }
 
-  // 6. Dibujar la línea principal de neón por encima del área
-  if (dataPoints.length > 1) {
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", pathD);
-    path.setAttribute("class", "chart-line");
-    svg.appendChild(path);
+  // Ruta para el área sombreada con degradado
+  const baselineY = height - padding;
+  let areaD = `M ${points[0].x} ${baselineY} L ${points[0].x} ${points[0].y}`;
+  if (points.length > 1) {
+    // Extraer la porción de curvas de la línea para el área
+    const curveOnly = pathD.substring(pathD.indexOf(" "));
+    areaD += curveOnly;
+    areaD += ` L ${points[points.length - 1].x} ${baselineY} Z`;
+  } else {
+    areaD += ` L ${points[0].x} ${baselineY} Z`;
   }
 
-  // 7. Dibujar los puntos, valores numéricos y nombres de las semanas (Eje X)
-  dataPoints.forEach((pt, i) => {
-    const x = getX(i), y = getY(pt.value);
+  // Pintar el área con degradado
+  const areaPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  areaPath.setAttribute("d", areaD);
+  areaPath.setAttribute("fill", "url(#cryptoGradient)");
+  svg.appendChild(areaPath);
 
-    // Círculo del punto neón
+  // 6. Dibujar la línea principal con ondas de neón
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", pathD);
+  path.setAttribute("class", "chart-line");
+  svg.appendChild(path);
+
+  // 7. Dibujar puntos, valores y etiquetas del eje X
+  points.forEach((pt) => {
     const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-    circle.setAttribute("cx", x); 
-    circle.setAttribute("cy", y); 
-    circle.setAttribute("r", "5"); 
-    circle.setAttribute("class", "chart-point");
+    circle.setAttribute("cx", pt.x); circle.setAttribute("cy", pt.y); circle.setAttribute("r", "5"); circle.setAttribute("class", "chart-point");
     
-    // Texto con el valor encima del punto
     const txtVal = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    txtVal.setAttribute("x", x); 
-    txtVal.setAttribute("y", y - 10); 
-    txtVal.setAttribute("class", "chart-value-label"); 
-    txtVal.textContent = pt.value;
+    txtVal.setAttribute("x", pt.x); txtVal.setAttribute("y", pt.y - 10); txtVal.setAttribute("class", "chart-value-label"); txtVal.textContent = pt.value;
 
-    // Texto de la semana en la parte inferior (Eje X)
     const txtWeek = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    txtWeek.setAttribute("x", x); 
-    txtWeek.setAttribute("y", height - 15); 
-    txtWeek.setAttribute("class", "chart-axis-text"); 
-    txtWeek.setAttribute("text-anchor", "middle");
+    txtWeek.setAttribute("x", pt.x); txtWeek.setAttribute("y", height - 15); txtWeek.setAttribute("class", "chart-axis-text"); txtWeek.setAttribute("text-anchor", "middle");
     txtWeek.textContent = pt.week;
 
     svg.appendChild(circle);
