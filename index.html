@@ -19,6 +19,8 @@
 :root {
   --bg:#17191d; --panel:#22252a; --gold:#d9ac52;
   --text:#f7f5f0; --muted:#aeb3bb; --line:#3b3f45;
+  --neon: #39ff14;
+  --neon-glow: rgba(57, 255, 20, 0.4);
 }
 * { box-sizing:border-box }
 body {
@@ -120,6 +122,103 @@ button:disabled { opacity:.45; cursor:not-allowed }
   font-size: 14px;
 }
 
+/* --- NUEVO: Navegación por Pestañas --- */
+    nav.app-tabs {
+      display: flex;
+      gap: 8px;
+      margin-top: 15px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 10px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      background: #2a2e35;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .tab-btn.active {
+      background: var(--gold);
+      color: #17191d;
+      border-color: var(--gold);
+    }
+
+    /* --- NUEVO: Estilos Específicos de Antropometría --- */
+    --neon: #39ff14;
+    --neon-glow: rgba(57, 255, 20, 0.4);
+
+    .step-badge {
+      display: inline-block;
+      background: rgba(217, 172, 82, 0.15);
+      color: var(--gold);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .instruction-box {
+      background: #1a1d22;
+      border-left: 4px solid var(--gold);
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      line-height: 1.4;
+      margin: 12px 0;
+      color: #d1d5db;
+    }
+    .chart-container {
+      width: 100%;
+      height: 320px;
+      background: #121417;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      margin: 15px 0;
+      position: relative;
+    }
+    svg.neon-chart {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+    .chart-line {
+      fill: none;
+      stroke: var(--neon);
+      stroke-width: 3.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0px 0px 8px var(--neon-glow));
+    }
+    .chart-point {
+      fill: #121417;
+      stroke: var(--neon);
+      stroke-width: 2.5;
+      cursor: pointer;
+    }
+    .chart-point:hover { r: 7; }
+    .chart-value-label {
+      fill: var(--text);
+      font-size: 11px;
+      font-weight: bold;
+      text-anchor: middle;
+    }
+    .chart-grid {
+      stroke: #2a2e35;
+      stroke-dasharray: 4;
+      stroke-width: 1;
+    }
+    .chart-axis-text {
+      fill: var(--muted);
+      font-size: 10px;
+    }  
   
 </style>
 
@@ -135,8 +234,16 @@ button:disabled { opacity:.45; cursor:not-allowed }
     <h1>IRON TRACK</h1>
     <div class="status">GYM · TRAINING LOG</div>
   </div>
+  
 </header>
 
+<!-- NUEVO: Barra de Navegación por Pestañas -->
+  <nav class="app-tabs">
+    <button class="tab-btn active" onclick="switchTab('gym')">🏋️ Gym Log</button>
+    <button class="tab-btn" onclick="switchTab('anthro-form')">📏 Medir Antropometría</button>
+    <button class="tab-btn" onclick="switchTab('anthro-reports')">📊 Reportes & Gráficos</button>
+  </nav>  
+<div id="tab-gym">
 <section id="welcome" class="panel">
   <h2>Tu entrenamiento</h2>
   <p>Los datos se guardan en este dispositivo. Puedes regresar y continuar una sesión pendiente.</p>
@@ -245,8 +352,72 @@ button:disabled { opacity:.45; cursor:not-allowed }
   <p>Los datos guardados se mantienen en este dispositivo.</p>
   <button id="reopenBtn">Volver a abrir</button>
 </section>
-
+</div>
+  
 <div id="notice" role="status" aria-live="polite"></div>
+
+<!-- NUEVO: SECCIÓN 2: FORMULARIO GUIADO ANTROPOMETRÍA -->
+  <div id="tab-anthro-form" hidden>
+    <section class="panel">
+      <h2>Registro Antropométrico Guiado</h2>
+      <p>Registra tus mediciones corporales ordenadamente semana tras semana.</p>
+      
+      <label for="anthroWeekSelect">Selecciona la semana de evaluación:</label>
+      <select id="anthroWeekSelect"></select>
+
+      <div id="anthroStepCard" class="panel" style="background: #1b1e23; margin-top: 15px;">
+        <span id="anthroStepBadge" class="step-badge">Paso 1 de 15</span>
+        <h3 id="anthroMeasureTitle" style="margin: 5px 0; color: var(--gold);">Peso</h3>
+        <div id="anthroMeasureProcedure" class="instruction-box">
+          Coloca la balanza sobre un suelo duro y nivelado. Pésate descalzo...
+        </div>
+
+        <label for="anthroInputValue" id="anthroInputLabel">Valor medido (kg):</label>
+        <input id="anthroInputValue" type="number" step="0.1" inputmode="decimal" placeholder="0.0">
+
+        <div class="row" style="margin-top: 15px;">
+          <button id="anthroPrevBtn" class="secondary" onclick="prevAnthroStep()">← Anterior</button>
+          <button id="anthroNextBtn" onclick="nextAnthroStep()">Siguiente →</button>
+        </div>
+      </div>
+
+      <div id="anthroSummaryPanel" class="panel" hidden>
+        <h3>Resumen de la Sesión</h3>
+        <p id="anthroSummaryText"></p>
+        <div id="anthroSummaryList" class="muted" style="max-height: 200px; overflow-y: auto; margin-bottom: 12px;"></div>
+        <button onclick="saveCurrentAnthroSession()">💾 Guardar Medidas Localmente</button>
+        <button class="secondary" onclick="exportAnthroToExcel()">📥 Exportar Medidas a Excel</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- NUEVO: SECCIÓN 3: REPORTES Y GRÁFICOS INTERACTIVOS -->
+  <div id="tab-anthro-reports" hidden>
+    <section class="panel">
+      <h2>Evolución Estadística</h2>
+      <p>Importa tu archivo Excel con registros para generar la evolución gráfica individual.</p>
+
+      <label for="excelFileInput">Cargar archivo Excel (.xlsx):</label>
+      <input type="file" id="excelFileInput" accept=".xlsx, .xls" onchange="handleAnthroExcelImport(event)">
+
+      <div id="chartViewerPanel" hidden>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+          <h3 id="chartTitle" style="margin:0; color:var(--gold);">Peso</h3>
+          <span id="chartIndexBadge" class="step-badge">Gráfico 1 de 15</span>
+        </div>
+
+        <div class="chart-container">
+          <svg id="neonSVG" class="neon-chart" viewBox="0 0 500 250"></svg>
+        </div>
+
+        <div class="row">
+          <button id="chartPrevBtn" class="secondary" onclick="prevChart()">← Gráfico Anterior</button>
+          <button id="chartNextBtn" onclick="nextChart()">Siguiente Gráfico →</button>
+        </div>
+      </div>
+    </section>
+  </div>  
+  
 </main>
 
 <script>
@@ -255,7 +426,6 @@ button:disabled { opacity:.45; cursor:not-allowed }
 const $ = id => document.getElementById(id);
 const DB_NAME = "IronTrackLocal";
 const DB_VERSION = 1;
-
 
 const EXERCISES = [
   // PIERNAS Y GLÚTEOS
@@ -1035,7 +1205,14 @@ async function closeForm() {
 async function init() {
   $("date").value = today();
   db = await openDB();
+// LLAMADA NECESARIA PARA LA ANTROPOMETRÍA:
+  initAnthroModule();
 
+  $("exerciseSearch").addEventListener("input", (e) => renderExercises(e.target.value));
+  $("startBtn").addEventListener("click", beginSession);
+  $("saveBtn").addEventListener("click", saveExercise);
+  $("exportBtn").addEventListener("click", exportExcel);
+  $("date").value = today();
   const saved = await getSetting("app");
   if (saved) app = saved;
 
@@ -1201,6 +1378,198 @@ init().catch(error => {
   console.error(error);
   notify("No se pudo abrir el almacenamiento. Comprueba el navegador.");
 });
+
+/* ----------------------------------------------------
+   CATÁLOGO DE MEDIDAS ANTROPOMÉTRICAS (15 MEDIDAS)
+---------------------------------------------------- */
+const ANTHRO_METRICS = [
+  { id: "peso", name: "Peso", unit: "kg", desc: "Coloca la balanza sobre un suelo duro y nivelado. Pésate descalzo, con ropa ligera, después de ir al baño y antes de desayunar. Permanece inmóvil y registra el resultado en kg." },
+  { id: "antebrazo", name: "Antebrazo", unit: "cm", desc: "Con el brazo relajado, la palma orientada hacia arriba y el puño sin apretar, desplaza la cinta por el antebrazo hasta encontrar su mayor circunferencia. Rodea la zona sin comprimir la piel." },
+  { id: "biceps_relajado", name: "Bíceps relajado", unit: "cm", desc: "Deja el brazo colgando junto al cuerpo, sin contraerlo. Localiza el punto medio entre la punta ósea del hombro y la punta del codo. Rodea el brazo a esa altura con la cinta horizontal." },
+  { id: "biceps_flexion", name: "Bíceps en flexión", unit: "cm", desc: "Eleva el brazo, dobla el codo aproximadamente 90° y contrae el bíceps al máximo cerrando el puño. Rodea la parte más voluminosa del brazo contraído." },
+  { id: "pectorales", name: "Pectorales", unit: "cm", desc: "De pie, con los brazos relajados, pasa la cinta alrededor del tórax a la altura de los pezones. Mantén la cinta horizontal y registra la medida al final de una espiración normal." },
+  { id: "hombros", name: "Hombros", unit: "cm", desc: "Mantén los brazos relajados. Rodea ambos hombros y el torso por el contorno exterior más ancho de los deltoides. Comprueba que la cinta siga el mismo recorrido." },
+  { id: "cuello", name: "Cuello", unit: "cm", desc: "Mantén la cabeza recta y la mirada al frente. Rodea el cuello justo por debajo de la laringe, sin apretar ni contraer los músculos." },
+  { id: "cintura_anatomica", name: "Cintura anatómica", unit: "cm", desc: "Localiza la última costilla palpable y la parte superior del hueso de la cadera. Coloca la cinta en el punto medio entre ambos. Registra al final de una espiración normal." },
+  { id: "muslo_superior", name: "Muslo superior", unit: "cm", desc: "De pie, con el peso repartido entre ambas piernas, localiza el pliegue de la ingle y el borde superior de la rótula. Mide el punto medio entre ambos y rodea el muslo." },
+  { id: "muslo_inferior", name: "Muslo inferior", unit: "cm", desc: "Localiza el borde superior de la rótula y mide 10 cm hacia arriba por la parte anterior del muslo. Rodea la pierna a esa altura con la cinta horizontal." },
+  { id: "pantorrillas", name: "Pantorrillas", unit: "cm", desc: "De pie, con los pies apoyados, desplaza la cinta hasta encontrar la mayor circunferencia de la pantorrilla. Mantén la cinta perpendicular al eje de la pierna." },
+  { id: "gluteos", name: "Glúteos", unit: "cm", desc: "De pie, con los pies juntos, rodea la parte más prominente de los glúteos. Comprueba de frente y de perfil que la cinta esté horizontal." },
+  { id: "estatura", name: "Estatura", unit: "cm", desc: "Descalzo, coloca los talones junto a una pared vertical. Mantén el cuerpo erguido y apoya un libro rígido sobre la cabeza. Mide desde el suelo en cm." },
+  { id: "abdomen_ombligo", name: "Abdomen al ombligo", unit: "cm", desc: "De pie y con el abdomen relajado, rodea el tronco haciendo pasar la cinta por el centro del ombligo. Registra al final de una espiración normal." },
+  { id: "muneca", name: "Muñeca", unit: "cm", desc: "Mantén la mano relajada. Rodea la muñeca justo por debajo de las prominencias óseas, sin apretar la cinta." }
+];
+
+let currentAnthroStep = 0;
+let currentAnthroValues = {};
+let currentChartIndex = 0;
+let importedAnthroData = null;
+
+function switchTab(tabId) {
+  $("tab-gym").hidden = tabId !== "gym";
+  $("tab-anthro-form").hidden = tabId !== "anthro-form";
+  $("tab-anthro-reports").hidden = tabId !== "anthro-reports";
+
+  document.querySelectorAll(".tab-btn").forEach((btn, idx) => {
+    btn.classList.toggle("active", 
+      (tabId === "gym" && idx === 0) ||
+      (tabId === "anthro-form" && idx === 1) ||
+      (tabId === "anthro-reports" && idx === 2)
+    );
+  });
+}
+
+function initAnthroModule() {
+  const select = $("anthroWeekSelect");
+  if (!select) return;
+  select.innerHTML = "";
+  for (let i = 1; i <= 52; i++) {
+    const opt = document.createElement("option");
+    opt.value = `Sem ${i}`;
+    opt.textContent = `Semana ${i}`;
+    select.appendChild(opt);
+  }
+  renderAnthroStep();
+}
+
+function renderAnthroStep() {
+  const metric = ANTHRO_METRICS[currentAnthroStep];
+  $("anthroStepBadge").textContent = `Paso ${currentAnthroStep + 1} de ${ANTHRO_METRICS.length}`;
+  $("anthroMeasureTitle").textContent = metric.name;
+  $("anthroMeasureProcedure").textContent = metric.desc;
+  $("anthroInputLabel").textContent = `Valor medido (${metric.unit}):`;
+  
+  $("anthroInputValue").value = currentAnthroValues[metric.id] ?? "";
+  $("anthroPrevBtn").disabled = currentAnthroStep === 0;
+  $("anthroNextBtn").textContent = (currentAnthroStep === ANTHRO_METRICS.length - 1) ? "Finalizar Medición" : "Siguiente →";
+  $("anthroInputValue").focus();
+}
+
+function nextAnthroStep() {
+  const metric = ANTHRO_METRICS[currentAnthroStep];
+  const val = $("anthroInputValue").value.trim();
+  if (val !== "") currentAnthroValues[metric.id] = parseFloat(val);
+
+  if (currentAnthroStep < ANTHRO_METRICS.length - 1) {
+    currentAnthroStep++;
+    renderAnthroStep();
+  } else {
+    showAnthroSummary();
+  }
+}
+
+function prevAnthroStep() {
+  if (currentAnthroStep > 0) {
+    currentAnthroStep--;
+    renderAnthroStep();
+  }
+}
+
+function showAnthroSummary() {
+  $("anthroStepCard").hidden = true;
+  $("anthroSummaryPanel").hidden = false;
+  const week = $("anthroWeekSelect").value;
+  $("anthroSummaryText").textContent = `Mediciones capturadas para la ${week}:`;
+  
+  const list = $("anthroSummaryList");
+  list.innerHTML = "";
+  ANTHRO_METRICS.forEach(m => {
+    const item = document.createElement("div");
+    item.style.padding = "4px 0";
+    item.style.borderBottom = "1px solid #2a2e35";
+    const val = currentAnthroValues[m.id] !== undefined ? `${currentAnthroValues[m.id]} ${m.unit}` : "No registrado";
+    item.innerHTML = `<strong>${m.name}:</strong> ${val}`;
+    list.appendChild(item);
+  });
+}
+
+function exportAnthroToExcel() {
+  const activeWeek = $("anthroWeekSelect").value;
+  const excelRows = ANTHRO_METRICS.map(m => ({
+    "Antropometría": m.name,
+    "Procedimiento de medición": m.desc,
+    [activeWeek]: currentAnthroValues[m.id] !== undefined ? currentAnthroValues[m.id] : ""
+  }));
+
+  const sheet = XLSX.utils.json_to_sheet(excelRows);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, sheet, "Antropometría");
+  XLSX.writeFile(workbook, "seguimiento_antropometrico.xlsx");
+  notify("Archivo Excel exportado con éxito.");
+}
+
+function handleAnthroExcelImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+    const json = XLSX.utils.sheet_to_json(worksheet);
+    
+    importedAnthroData = {
+      weeks: Object.keys(json[0] || {}).filter(k => k !== "Antropometría" && k !== "Procedimiento de medición"),
+      metrics: json
+    };
+    currentChartIndex = 0;
+    $("chartViewerPanel").hidden = false;
+    renderChart();
+    notify("Excel importado con éxito.");
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderChart() {
+  if (!importedAnthroData) return;
+  const metricRow = importedAnthroData.metrics[currentChartIndex];
+  $("chartTitle").textContent = metricRow["Antropometría"] || "Medida";
+  $("chartIndexBadge").textContent = `Gráfico ${currentChartIndex + 1} de ${importedAnthroData.metrics.length}`;
+
+  $("chartPrevBtn").disabled = currentChartIndex === 0;
+  $("chartNextBtn").disabled = currentChartIndex === importedAnthroData.metrics.length - 1;
+
+  const dataPoints = importedAnthroData.weeks.map(w => {
+    const val = parseFloat(metricRow[w]);
+    return { week: w, value: isNaN(val) ? null : val };
+  }).filter(d => d.value !== null);
+
+  const svg = $("neonSVG");
+  svg.innerHTML = "";
+  if (!dataPoints.length) return;
+
+  const width = 500, height = 250, padding = 45;
+  const maxVal = Math.max(...dataPoints.map(d => d.value)) * 1.15 || 10;
+  const getX = i => padding + (i * (width - 2 * padding) / Math.max(1, dataPoints.length - 1));
+  const getY = val => height - padding - (val / maxVal * (height - 2 * padding));
+
+  let pathD = "";
+  dataPoints.forEach((pt, i) => {
+    const x = getX(i), y = getY(pt.value);
+    pathD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+  });
+
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", pathD);
+  path.setAttribute("class", "chart-line");
+  svg.appendChild(path);
+
+  dataPoints.forEach((pt, i) => {
+    const x = getX(i), y = getY(pt.value);
+    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+    circle.setAttribute("cx", x); circle.setAttribute("cy", y); circle.setAttribute("r", "5"); circle.setAttribute("class", "chart-point");
+    
+    const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    txt.setAttribute("x", x); txt.setAttribute("y", y - 10); txt.setAttribute("class", "chart-value-label"); txt.textContent = pt.value;
+    
+    svg.appendChild(circle);
+    svg.appendChild(txt);
+  });
+}
+
+function nextChart() { if (importedAnthroData && currentChartIndex < importedAnthroData.metrics.length - 1) { currentChartIndex++; renderChart(); } }
+function prevChart() { if (importedAnthroData && currentChartIndex > 0) { currentChartIndex--; renderChart(); } }
+  
 </script>
 </body>
   </html>
