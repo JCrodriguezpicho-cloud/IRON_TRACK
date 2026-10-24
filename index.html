@@ -1588,12 +1588,10 @@ function renderChart() {
   let minVal = Math.min(...values);
   let maxVal = Math.max(...values);
 
-  // Si todos los datos son iguales o solo hay 1 punto, creamos un rango sintético
   if (minVal === maxVal) {
     minVal = Math.max(0, minVal - 5);
     maxVal = maxVal + 5;
   } else {
-    // Agregar un margen del 10% arriba y abajo para que las curvas no toquen los bordes
     const diff = maxVal - minVal;
     minVal = Math.max(0, minVal - diff * 0.15);
     maxVal = maxVal + diff * 0.15;
@@ -1610,7 +1608,31 @@ function renderChart() {
     return height - padding - (ratio * (height - 2 * padding));
   };
 
-  // 3. Dibujar líneas de guía de fondo (Grid lines horizontales)
+  // 3. Crear el degradado SVG para el efecto Bolsa de Valores (Área bajo la curva)
+  const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+  const gradient = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+  gradient.setAttribute("id", "cryptoGradient");
+  gradient.setAttribute("x1", "0%");
+  gradient.setAttribute("y1", "0%");
+  gradient.setAttribute("x2", "0%");
+  gradient.setAttribute("y2", "100%");
+
+  const stop1 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+  stop1.setAttribute("offset", "0%");
+  stop1.setAttribute("stop-color", "var(--neon)");
+  stop1.setAttribute("stop-opacity", "0.35"); // Brillo superior
+
+  const stop2 = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+  stop2.setAttribute("offset", "100%");
+  stop2.setAttribute("stop-color", "var(--neon)");
+  stop2.setAttribute("stop-opacity", "0.0"); // Se desvanece abajo
+
+  gradient.appendChild(stop1);
+  gradient.appendChild(stop2);
+  defs.appendChild(gradient);
+  svg.appendChild(defs);
+
+  // 4. Dibujar líneas de guía de fondo (Grid lines horizontales)
   const gridSteps = 3;
   for (let g = 0; g <= gridSteps; g++) {
     const gridY = height - padding - (g * (height - 2 * padding) / gridSteps);
@@ -1623,13 +1645,36 @@ function renderChart() {
     svg.appendChild(line);
   }
 
-  // 4. Construir la ruta de la línea neón (Path)
+  // 5. Construir la ruta de la línea y el área cerrada para el degradado
   let pathD = "";
+  let areaD = "";
+  const baselineY = height - padding;
+
   dataPoints.forEach((pt, i) => {
     const x = getX(i), y = getY(pt.value);
-    pathD += (i === 0 ? `M ${x} ${y}` : ` L ${x} ${y}`);
+    if (i === 0) {
+      pathD += `M ${x} ${y}`;
+      areaD += `M ${x} ${baselineY} L ${x} ${y}`;
+    } else {
+      pathD += ` L ${x} ${y}`;
+      areaD += ` L ${x} ${y}`;
+    }
   });
 
+  // Cerrar el polígono del área hacia la base inferior
+  if (dataPoints.length > 0) {
+    const lastX = getX(dataPoints.length - 1);
+    const firstX = getX(0);
+    areaD += ` L ${lastX} ${baselineY} Z`;
+
+    // Pintar el área sombreada con degradado
+    const areaPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    areaPath.setAttribute("d", areaD);
+    areaPath.setAttribute("fill", "url(#cryptoGradient)");
+    svg.appendChild(areaPath);
+  }
+
+  // 6. Dibujar la línea principal de neón por encima del área
   if (dataPoints.length > 1) {
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     path.setAttribute("d", pathD);
@@ -1637,7 +1682,7 @@ function renderChart() {
     svg.appendChild(path);
   }
 
-  // 5. Dibujar los puntos, valores numéricos y nombres de las semanas (Eje X)
+  // 7. Dibujar los puntos, valores numéricos y nombres de las semanas (Eje X)
   dataPoints.forEach((pt, i) => {
     const x = getX(i), y = getY(pt.value);
 
